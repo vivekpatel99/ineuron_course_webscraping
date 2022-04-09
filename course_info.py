@@ -92,22 +92,12 @@ class CourseInfo(webdriver.Chrome):
 
         return links_list
 
-    def find_course_name(self) -> str:
+    def get_all_info_from_page(self) -> Course:
         course_name = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-title__1a-Hg').text
         print(course_name)
-        return course_name
 
-    def find_course_description(self) -> str:
         course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
         print(course_description)
-        return course_description
-
-    def find_course_description(self) -> str:
-        course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
-        print(course_description)
-        return course_description
-
-    def get_all_info_from_page(self) -> Course:
 
         course_price = self.find_element(by=By.CSS_SELECTOR, value='.CoursePrice_dis-price__3xw3G span').text
         print(course_price)
