@@ -5,13 +5,13 @@ from dataclasses import dataclass
 class Course:
     course_name: str
     description: str
-    course_features: str
+    course_features: list[str]
     price: str
-    What_youll_learn: str
-    timings: str
-    requirements: str
-    curriculum: str
-    mentor_names: str
+    what_youll_learn: list[str]
+    timings: dict[str, str]
+    requirements: list[str]
+    curriculum: dict[str, list[str]]
+    mentor_names: list[str]
 
 
 @dataclass()

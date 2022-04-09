@@ -92,38 +92,42 @@ class CourseInfo(webdriver.Chrome):
 
         return links_list
 
-    def get_all_info_from_page(self) -> Course:
+    def find_course_name(self) -> str:
         course_name = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-title__1a-Hg').text
         print(course_name)
+        return course_name
 
+    def find_course_description(self) -> str:
         course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
         print(course_description)
+        return course_description
 
+    def find_course_price(self) -> str:
         course_price = self.find_element(by=By.CSS_SELECTOR, value='.CoursePrice_dis-price__3xw3G span').text
         print(course_price)
+        return str(course_price)
 
+    def find_course_features(self) -> list[str]:
         course_features = self.find_elements(by=By.CSS_SELECTOR,
                                              value='div.CoursePrice_course-features__2qcJp ul li')
         features_list = []
         for feature in course_features:
             features_list.append(feature.text)
         print(features_list)
+        return features_list
 
+    def find_what_youll_learn(self) -> list[str]:
         what_youll_learn = self.find_elements(by=By.CSS_SELECTOR,
                                               value='div.CourseLearning_card__WxYAo ul li')
         topics_list = []
         for topics in what_youll_learn:
             topics_list.append(topics.text)
         print(topics_list)
+        return topics_list
 
-        course_features = self.find_elements(by=By.CSS_SELECTOR,
-                                             value='div.CoursePrice_course-features__2qcJp ul li')
-        for feature in course_features:
-            features_list.append(feature.text)
-        print(features_list)
-
+    def find_course_timings(self) -> dict[str, str]:
+        class_list = {}
         try:
-            class_list = {}
             timings = self.find_elements(by=By.CSS_SELECTOR,
                                          value='div div.CoursePrice_time__1I6dT')
             if timings:
@@ -133,33 +137,78 @@ class CourseInfo(webdriver.Chrome):
                 elif len(timings) == 1:
                     class_list = {'class time': timings[0].text}
             print(class_list)
-
+            return class_list
         except Exception as e:
             print(e)
+        return class_list
 
+    def find_requirements(self) -> list[str]:
         requirements = self.find_elements(by=By.CSS_SELECTOR,
                                           value="div.CourseRequirement_card__3g7zR ul li")
         requirements_list = []
         for requirement in requirements:
             requirements_list.append(requirement.text)
         print(requirements_list)
+        return requirements_list
 
+    def find_click_view_more_button_curriculum(self) -> None:
         # find view more button and click in course curriculum
-        view_more_button = self.find_element(by=By.CSS_SELECTOR,
-                                             value='span.CurriculumAndProjects_view-more-btn__3ggZL')
-        view_more_button.click()
+        try:
+            view_more_button = self.find_element(by=By.CSS_SELECTOR,
+                                                 value='span.CurriculumAndProjects_view-more-btn__3ggZL')
+            view_more_button.click()
+        except Exception as e:
+            print(e)
+            print('[INFO] no click view button found on course curriculum')
 
-        course_curriculum = self.find_elements(by=By.CSS_SELECTOR,
-                                               value='div.CurriculumAndProjects_course-curriculum__Rlhvu')
+    def click_plus_button_curriculum(self) -> None:
+        pass
 
-        if course_curriculum[0].find_elements(By.CSS_SELECTOR, 'h4')[0].text == 'Course Curriculum':
-            # print('[ERROR] urse Curriculum not found')
-            print(course_curriculum)
-            course_curriculum_dict = {}
+    def get_curriculum_data(self) -> dict[str, list]:
+        course_curriculum = self.find_element(by=By.CSS_SELECTOR,
+                                              value='div.CurriculumAndProjects_course-curriculum__Rlhvu')
 
-        # for requirement in course_curriculum:
-        #     requirements_list.append(requirement.text)
-        # print(requirements_list)
+        if course_curriculum.find_elements(By.CSS_SELECTOR, 'h4')[0].text != 'Course Curriculum':
+            print('[ERROR] course curriculum not found')
+            return {}
+
+        course_curriculum_dict = {}
+        course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
+
+        headings = course_curriculum_chapters.find_elements(
+            by=By.CSS_SELECTOR,
+            value='div div span')
+
+        plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
+        sub_chapters = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR,
+                                                                value='ul li div.CurriculumAndProjects_course-curriculum-list__3rUJt')
+        for cnt, heading in enumerate(headings):
+            heading_str = heading.text
+            try:
+                plus_buttons[cnt].click()
+                print('[INFO] plus button clicked')
+            except Exception as e:
+                print(e)
+                print('[INFO] NO plus button found')
+
+            sub_chapter_list = []
+            for sub_chapter in sub_chapters:
+                # if sub_chapter.text ==
+                print(f'{heading_str}->{sub_chapter.text}')
+
+    def get_all_info_from_page(self) -> Course:
+
+        course_name = self.find_course_name()
+        description = self.find_course_description()
+        price = self.find_course_price()
+        course_features = self.find_course_features()
+        what_youll_learn = self.find_what_youll_learn()
+        timings = self.find_course_timings()
+        requirements = self.find_requirements()
+        self.find_click_view_more_button_curriculum()
+        self.get_curriculum_data()
+
+        # return Course()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.teardown:
