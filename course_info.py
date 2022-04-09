@@ -171,19 +171,23 @@ class CourseInfo(webdriver.Chrome):
         if course_curriculum.find_elements(By.CSS_SELECTOR, 'h4')[0].text != 'Course Curriculum':
             print('[ERROR] course curriculum not found')
             return {}
-
-        course_curriculum_dict = {}
+        time.sleep(1)
         course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
-
+        time.sleep(3)
         headings = course_curriculum_chapters.find_elements(
-            by=By.CSS_SELECTOR,
-            value='div div span')
+            by=By.XPATH,
+            value='.//div/div/span')
+        self.implicitly_wait(5)
+        time.sleep(5)
 
         plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
-        sub_chapters = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR,
-                                                                value='ul li div.CurriculumAndProjects_course-curriculum-list__3rUJt')
-        for cnt, heading in enumerate(headings):
-            heading_str = heading.text
+        course_curriculum_dict = {}
+        # removing 'preview' from headings
+        clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
+
+        for cnt, heading in enumerate(clean_heading, start=1):
+            print(cnt)
+
             try:
                 plus_buttons[cnt].click()
                 print('[INFO] plus button clicked')
@@ -192,9 +196,35 @@ class CourseInfo(webdriver.Chrome):
                 print('[INFO] NO plus button found')
 
             sub_chapter_list = []
+
+            sub_chapters = course_curriculum_chapters.find_elements(
+                by=By.XPATH,
+                value=f'.//div[{cnt}]/div/ul/li')
+            # sub_chapters = course_curriculum_chapters.find_elements(
+            #     by=By.CSS_SELECTOR,
+            #     value=f'div[{cnt}] div ul li')
+            self.implicitly_wait(3)
+            time.sleep(3)
+            # sub_chapters = WebDriverWait(self, 10).until(
+            #     EC.visibility_of_all_elements_located((By.XPATH, f'.//div[{cnt}]/div/ul/li')))
+
             for sub_chapter in sub_chapters:
-                # if sub_chapter.text ==
-                print(f'{heading_str}->{sub_chapter.text}')
+                sub_chapter_str = sub_chapter.text
+
+                sub_chapter_list.append(sub_chapter_str.replace('\nPreview', ''))
+            course_curriculum_dict[heading] = sub_chapter_list
+            print(course_curriculum_dict)
+
+        return course_curriculum_dict
+
+    def get_mentor_name(self) -> list[str]:
+        mentor_names = self.find_elements(by=By.CSS_SELECTOR,
+                                          value="div.InstructorDetails_mentor__2hmG8.InstructorDetails_card__14MoH.InstructorDetails_flex__2ePsQ.card.flex div h5")
+        mentor_names_list = []
+        for mentor_name in mentor_names:
+            mentor_names_list.append(mentor_name.text)
+        print(mentor_names_list)
+        return mentor_names_list
 
     def get_all_info_from_page(self) -> Course:
 
@@ -206,9 +236,19 @@ class CourseInfo(webdriver.Chrome):
         timings = self.find_course_timings()
         requirements = self.find_requirements()
         self.find_click_view_more_button_curriculum()
-        self.get_curriculum_data()
+        course_curriculum_dict = self.get_curriculum_data()
+        print(course_curriculum_dict)
+        mentor_names = self.get_mentor_name()
 
-        # return Course()
+        return Course(course_name=course_name,
+                      description=description,
+                      price=price,
+                      course_features=course_features,
+                      what_youll_learn=what_youll_learn,
+                      timings=timings,
+                      requirements=requirements,
+                      curriculum=course_curriculum_dict,
+                      mentor_names=mentor_names)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.teardown:

@@ -7,7 +7,7 @@ def main():
     # safely close after use of browser
     with CourseInfo() as course_info:
         course_info.first_page(url='https://courses.ineuron.ai/Full-Stack-Data-Science-Bootcamp')
-        course_info.get_all_info_from_page()
+        print(course_info.get_all_info_from_page())
         # course_info.fetch_courses()
         time.sleep(3)
 
