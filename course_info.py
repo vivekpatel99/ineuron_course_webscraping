@@ -157,6 +157,7 @@ class CourseInfo(webdriver.Chrome):
             return class_list
         except Exception as e:
             print(e)
+    
         return class_list
 
     def find_requirements(self) -> list[str]:
