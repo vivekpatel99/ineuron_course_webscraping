@@ -6,9 +6,9 @@ from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # to avoid installation of the driver manually
+from selenium.webdriver.support import expected_conditions as EC
 
 import constants
 from models import Course
@@ -46,21 +46,24 @@ class CourseInfo(webdriver.Chrome):
                                  fix_hairline=True, )
         return self
 
-    def first_page(self, url: str = constants.BASE_URL) -> None:
+    def goto_page(self, url: str = constants.BASE_URL) -> None:
         self.get(url)
 
+    # def get_list_categories(self):
+    #     category_elem = self.find_element(by=By.ID, value='category')
+
     def scroll_down(self):
-        SCROLL_PAUSE_TIME_SEC = 2  # to copy human behaviour
+        scroll_pause_time_sec = 2  # to copy human behaviour
         # get scroll height
         last_height = self.execute_script("return document.body.scrollHeight")
         # print(last_height)
         while True:
             # scroll down to bottom
-            time.sleep(SCROLL_PAUSE_TIME_SEC)
+            time.sleep(scroll_pause_time_sec)
             self.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
             # wait to load page
-            time.sleep(SCROLL_PAUSE_TIME_SEC)
+            time.sleep(scroll_pause_time_sec)
 
             # calculate new scroll height and compare with last scroll height
             new_height = self.execute_script("return document.body.scrollHeight")
@@ -69,15 +72,29 @@ class CourseInfo(webdriver.Chrome):
                 break
             last_height = new_height
 
-    def fetch_courses(self) -> list[str]:
+    def fetch_courses_links_list_with_category(self) -> dict[str, str]:
         # finding course tab and hover over it to get list of field
         courses_elem = self.find_element(by=By.ID, value='course-dropdown')
         hover = ActionChains(self).move_to_element(courses_elem)
         hover.perform()
 
-        # find data science filed
-        data_science_filed_elem = self.find_element(by=By.ID, value='603fa55d8c5e6f4b0ce22d50')
-        data_science_filed_elem.click()
+        # find categories
+        category_elem = self.find_element(by=By.ID, value='category')
+        # category_elem = WebDriverWait(self, 10).until(
+        #     EC.presence_of_all_elements_located((By.ID, 'category')))
+
+        # get categories name and links
+        categories_info = WebDriverWait(category_elem, 10).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'ul a[href]')))
+        categories_dict = {}
+        for category in categories_info:
+            categories_dict[category.text] = category.get_attribute('href')
+
+        print(categories_dict)
+        return categories_dict
+
+    def get_courses_links_from_category_link(self, course_link: str):
+        self.goto_page(url=course_link)
 
         # scroll down until end of the page
         self.scroll_down()
@@ -125,17 +142,17 @@ class CourseInfo(webdriver.Chrome):
         print(topics_list)
         return topics_list
 
-    def find_course_timings(self) -> dict[str, str]:
-        class_list = {}
+    def find_course_timings(self) -> list[str]:
+        class_list = []
         try:
             timings = self.find_elements(by=By.CSS_SELECTOR,
                                          value='div div.CoursePrice_time__1I6dT')
             if timings:
                 if len(timings) == 2:
-                    class_list = {'class time': timings[0].text}
-                    class_list = {'doubt session': timings[1].text}
+                    class_list.append(f'class time: {timings[0].text}')
+                    class_list.append(f'doubt session: {timings[1].text}')
                 elif len(timings) == 1:
-                    class_list = {'class time': timings[0].text}
+                    class_list.append(f'class time: {timings[0].text}')
             print(class_list)
             return class_list
         except Exception as e:
@@ -164,24 +181,27 @@ class CourseInfo(webdriver.Chrome):
     def click_plus_button_curriculum(self) -> None:
         pass
 
-    def get_curriculum_data(self) -> dict[str, list]:
+    def get_curriculum_data(self) -> list[str, list]:
         course_curriculum = self.find_element(by=By.CSS_SELECTOR,
                                               value='div.CurriculumAndProjects_course-curriculum__Rlhvu')
 
         if course_curriculum.find_elements(By.CSS_SELECTOR, 'h4')[0].text != 'Course Curriculum':
             print('[ERROR] course curriculum not found')
-            return {}
+            return []
         time.sleep(1)
         course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
         time.sleep(3)
-        headings = course_curriculum_chapters.find_elements(
-            by=By.XPATH,
-            value='.//div/div/span')
-        self.implicitly_wait(5)
+
+        # headings = course_curriculum_chapters.find_elements(
+        #     by=By.XPATH,
+        #     value='.//div/div/span')
+
+        headings = WebDriverWait(course_curriculum_chapters, 10).until(
+            EC.presence_of_all_elements_located((By.XPATH, './/div/div/span')))
         time.sleep(5)
 
         plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
-        course_curriculum_dict = {}
+        course_curriculum_list = []
         # removing 'preview' from headings
         clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
 
@@ -212,10 +232,11 @@ class CourseInfo(webdriver.Chrome):
                 sub_chapter_str = sub_chapter.text
 
                 sub_chapter_list.append(sub_chapter_str.replace('\nPreview', ''))
-            course_curriculum_dict[heading] = sub_chapter_list
-            print(course_curriculum_dict)
+            join_chapter_list = "\n".join(sub_chapter_list)
+            course_curriculum_list.append(f'{heading.upper()} \n {join_chapter_list}')
+            print(course_curriculum_list)
 
-        return course_curriculum_dict
+        return course_curriculum_list
 
     def get_mentor_name(self) -> list[str]:
         mentor_names = self.find_elements(by=By.CSS_SELECTOR,

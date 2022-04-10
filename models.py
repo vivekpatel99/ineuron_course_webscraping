@@ -8,9 +8,9 @@ class Course:
     course_features: list[str]
     price: str
     what_youll_learn: list[str]
-    timings: dict[str, str]
+    timings: list[str]
     requirements: list[str]
-    curriculum: dict[str, list[str]]
+    curriculum: list[str, list[str]]
     mentor_names: list[str]
 
 
