@@ -14,7 +14,7 @@ import constants
 from models import Course
 
 """
-TODO: setup headless
+Class contains all the functions to scrape courses info from https://ineuron.ai/
 """
 
 
@@ -28,8 +28,6 @@ class CourseInfo(webdriver.Chrome):
         options.add_experimental_option('useAutomationExtension', False)
         options.add_argument(f'user-agent={user_agent}')
 
-        # options.headless = True
-        # options.add_argument('--disable-gpu')  # applicable to windows os only
         super(CourseInfo, self).__init__(executable_path=self.driver_path,
                                          chrome_options=options)  # initializing init of webdriver
         self.implicitly_wait(15)
@@ -56,7 +54,7 @@ class CourseInfo(webdriver.Chrome):
         scroll_pause_time_sec = 2  # to copy human behaviour
         # get scroll height
         last_height = self.execute_script("return document.body.scrollHeight")
-        # print(last_height)
+
         while True:
             # scroll down to bottom
             time.sleep(scroll_pause_time_sec)
@@ -68,7 +66,8 @@ class CourseInfo(webdriver.Chrome):
             # calculate new scroll height and compare with last scroll height
             new_height = self.execute_script("return document.body.scrollHeight")
             print(new_height)
-            if new_height == 4331:  # last_height:
+            if new_height == 4331:  # last_height: remove comment
+                # if you want to get all the courses link from category page
                 break
             last_height = new_height
 
@@ -103,28 +102,28 @@ class CourseInfo(webdriver.Chrome):
         course_links = WebDriverWait(self, 10).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.Course_right-area__1XUfi a[href]')))
         links_list = []
+
         for links in course_links:
-            # print(links.get_attribute('href'))
             links_list.append(links.get_attribute('href'))
 
         return links_list
 
-    def find_course_name(self) -> str:
+    def get_course_name(self) -> str:
         course_name = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-title__1a-Hg').text
         print(course_name)
         return course_name
 
-    def find_course_description(self) -> str:
+    def get_course_description(self) -> str:
         course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
         print(course_description)
         return course_description
 
-    def find_course_price(self) -> str:
+    def get_course_price(self) -> str:
         course_price = self.find_element(by=By.CSS_SELECTOR, value='.CoursePrice_dis-price__3xw3G span').text
         print(course_price)
         return str(course_price)
 
-    def find_course_features(self) -> list[str]:
+    def get_course_features(self) -> list[str]:
         course_features = self.find_elements(by=By.CSS_SELECTOR,
                                              value='div.CoursePrice_course-features__2qcJp ul li')
         features_list = []
@@ -133,7 +132,7 @@ class CourseInfo(webdriver.Chrome):
         print(features_list)
         return features_list
 
-    def find_what_youll_learn(self) -> list[str]:
+    def get_what_youll_learn(self) -> list[str]:
         what_youll_learn = self.find_elements(by=By.CSS_SELECTOR,
                                               value='div.CourseLearning_card__WxYAo ul li')
         topics_list = []
@@ -142,7 +141,7 @@ class CourseInfo(webdriver.Chrome):
         print(topics_list)
         return topics_list
 
-    def find_course_timings(self) -> list[str]:
+    def get_course_timings(self) -> list[str]:
         class_list = []
         try:
             timings = self.find_elements(by=By.CSS_SELECTOR,
@@ -157,10 +156,10 @@ class CourseInfo(webdriver.Chrome):
             return class_list
         except Exception as e:
             print(e)
-    
+
         return class_list
 
-    def find_requirements(self) -> list[str]:
+    def get_requirements(self) -> list[str]:
         requirements = self.find_elements(by=By.CSS_SELECTOR,
                                           value="div.CourseRequirement_card__3g7zR ul li")
         requirements_list = []
@@ -169,7 +168,7 @@ class CourseInfo(webdriver.Chrome):
         print(requirements_list)
         return requirements_list
 
-    def find_click_view_more_button_curriculum(self) -> None:
+    def get_click_view_more_button_curriculum(self) -> None:
         # find view more button and click in course curriculum
         try:
             view_more_button = self.find_element(by=By.CSS_SELECTOR,
@@ -193,16 +192,13 @@ class CourseInfo(webdriver.Chrome):
         course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
         time.sleep(3)
 
-        # headings = course_curriculum_chapters.find_elements(
-        #     by=By.XPATH,
-        #     value='.//div/div/span')
-
         headings = WebDriverWait(course_curriculum_chapters, 10).until(
             EC.presence_of_all_elements_located((By.XPATH, './/div/div/span')))
         time.sleep(5)
 
         plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
         course_curriculum_list = []
+
         # removing 'preview' from headings
         clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
 
@@ -221,13 +217,9 @@ class CourseInfo(webdriver.Chrome):
             sub_chapters = course_curriculum_chapters.find_elements(
                 by=By.XPATH,
                 value=f'.//div[{cnt}]/div/ul/li')
-            # sub_chapters = course_curriculum_chapters.find_elements(
-            #     by=By.CSS_SELECTOR,
-            #     value=f'div[{cnt}] div ul li')
+
             self.implicitly_wait(3)
             time.sleep(3)
-            # sub_chapters = WebDriverWait(self, 10).until(
-            #     EC.visibility_of_all_elements_located((By.XPATH, f'.//div[{cnt}]/div/ul/li')))
 
             for sub_chapter in sub_chapters:
                 sub_chapter_str = sub_chapter.text
@@ -250,14 +242,14 @@ class CourseInfo(webdriver.Chrome):
 
     def get_all_info_from_page(self) -> Course:
 
-        course_name = self.find_course_name()
-        description = self.find_course_description()
-        price = self.find_course_price()
-        course_features = self.find_course_features()
-        what_youll_learn = self.find_what_youll_learn()
-        timings = self.find_course_timings()
-        requirements = self.find_requirements()
-        self.find_click_view_more_button_curriculum()
+        course_name = self.get_course_name()
+        description = self.get_course_description()
+        price = self.get_course_price()
+        course_features = self.get_course_features()
+        what_youll_learn = self.get_what_youll_learn()
+        timings = self.get_course_timings()
+        requirements = self.get_requirements()
+        self.get_click_view_more_button_curriculum()
         course_curriculum_dict = self.get_curriculum_data()
         print(course_curriculum_dict)
         mentor_names = self.get_mentor_name()
