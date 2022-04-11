@@ -63,9 +63,6 @@ class CourseInfo(webdriver.Chrome):
             return True
         return False
 
-    # def get_list_categories(self):
-    #     category_elem = self.find_element(by=By.ID, value='category')
-
     def scroll_down(self):
         scroll_pause_time_sec = 2  # to copy human behaviour
         # get scroll height
@@ -92,12 +89,12 @@ class CourseInfo(webdriver.Chrome):
         # courses_elem = self.find_element(by=By.ID, value='course-dropdown')
         courses_elem = WebDriverWait(self, 30).until(
             EC.element_to_be_clickable((By.ID, 'course-dropdown')))
+        time.sleep(2)
 
         hover = ActionChains(self).move_to_element(courses_elem)
         hover.perform()
 
         # find categories
-        # category_elem = self.find_element(by=By.ID, value='category')
         category_elem = WebDriverWait(self, 30).until(
             EC.presence_of_element_located((By.ID, 'category')))
 
@@ -185,8 +182,6 @@ class CourseInfo(webdriver.Chrome):
     def get_course_timings(self) -> list[str]:
         class_list = []
         try:
-            # timings = self.find_elements(by=By.CSS_SELECTOR,
-            #                              value='div div.CoursePrice_time__1I6dT')
             timings = WebDriverWait(self, 30).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR,
                                                      'div div.CoursePrice_time__1I6dT')))
@@ -244,7 +239,7 @@ class CourseInfo(webdriver.Chrome):
                 print('[ERROR] course curriculum not found')
                 return []
             time.sleep(3)
-            # course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
+
             course_curriculum_chapters = WebDriverWait(course_curriculum, 30).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'div div')))
             time.sleep(3)
@@ -255,6 +250,7 @@ class CourseInfo(webdriver.Chrome):
                 headings = WebDriverWait(course_curriculum_chapters, 30, ignored_exceptions).until(
                     EC.presence_of_all_elements_located((By.XPATH, './/div/div/span')))
                 time.sleep(3)
+
                 # removing 'preview' from headings
                 clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
                 print(f'clean curriculum headings {clean_heading}')
