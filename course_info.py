@@ -25,6 +25,7 @@ class CourseInfo(webdriver.Chrome):
         options = Options()
         user_agent = fake_useragent.UserAgent
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_argument('--no-sandbox')
         options.add_experimental_option('useAutomationExtension', False)
         options.add_argument(f'user-agent={user_agent}')
 
