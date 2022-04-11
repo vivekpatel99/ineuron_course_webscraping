@@ -1,14 +1,16 @@
+import sys
 import time
 
 import fake_useragent
 import selenium_stealth  # avoid detection from website that selenium is used
+from selenium import common
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager  # to avoid installation of the driver manually
-from selenium.webdriver.support import expected_conditions as EC
 
 import constants
 from models import Course
@@ -74,17 +76,20 @@ class CourseInfo(webdriver.Chrome):
 
     def fetch_courses_links_list_with_category(self) -> dict[str, str]:
         # finding course tab and hover over it to get list of field
-        courses_elem = self.find_element(by=By.ID, value='course-dropdown')
+        # courses_elem = self.find_element(by=By.ID, value='course-dropdown')
+        courses_elem = WebDriverWait(self, 30).until(
+            EC.element_to_be_clickable((By.ID, 'course-dropdown')))
+
         hover = ActionChains(self).move_to_element(courses_elem)
         hover.perform()
 
         # find categories
-        category_elem = self.find_element(by=By.ID, value='category')
-        # category_elem = WebDriverWait(self, 10).until(
-        #     EC.presence_of_all_elements_located((By.ID, 'category')))
+        # category_elem = self.find_element(by=By.ID, value='category')
+        category_elem = WebDriverWait(self, 30).until(
+            EC.presence_of_element_located((By.ID, 'category')))
 
         # get categories name and links
-        categories_info = WebDriverWait(category_elem, 10).until(
+        categories_info = WebDriverWait(category_elem, 30).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'ul a[href]')))
         categories_dict = {}
         for category in categories_info:
@@ -100,7 +105,7 @@ class CourseInfo(webdriver.Chrome):
         self.scroll_down()
 
         # get list of courses links on the page
-        course_links = WebDriverWait(self, 10).until(
+        course_links = WebDriverWait(self, 30).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.Course_right-area__1XUfi a[href]')))
         links_list = []
 
@@ -115,18 +120,29 @@ class CourseInfo(webdriver.Chrome):
         return course_name
 
     def get_course_description(self) -> str:
-        course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
-        print(course_description)
-        return course_description
+        try:
+            course_description = self.find_element(by=By.CSS_SELECTOR, value='.Hero_course-desc__26_LL').text
+            print(course_description)
+            return course_description
+        except common.exceptions.StaleElementReferenceException:
+            print('[WARNING] No course description found')
+        return ''
 
     def get_course_price(self) -> str:
-        course_price = self.find_element(by=By.CSS_SELECTOR, value='.CoursePrice_dis-price__3xw3G span').text
-        print(course_price)
-        return str(course_price)
+        try:
+            course_price = self.find_element(by=By.CSS_SELECTOR, value='.CoursePrice_dis-price__3xw3G span').text
+            print(course_price)
+            return str(course_price)
+        except common.exceptions.StaleElementReferenceException:
+            print('[WARNING] No course price description found')
+        return ''
 
     def get_course_features(self) -> list[str]:
-        course_features = self.find_elements(by=By.CSS_SELECTOR,
-                                             value='div.CoursePrice_course-features__2qcJp ul li')
+        # course_features = self.find_elements(by=By.CSS_SELECTOR,
+        # value='div.CoursePrice_course-features__2qcJp ul li')
+        course_features = WebDriverWait(self, 30).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                 'div.CoursePrice_course-features__2qcJp ul li')))
         features_list = []
         for feature in course_features:
             features_list.append(feature.text)
@@ -134,8 +150,11 @@ class CourseInfo(webdriver.Chrome):
         return features_list
 
     def get_what_youll_learn(self) -> list[str]:
-        what_youll_learn = self.find_elements(by=By.CSS_SELECTOR,
-                                              value='div.CourseLearning_card__WxYAo ul li')
+        # what_youll_learn = self.find_elements(by=By.CSS_SELECTOR,
+        #                                       value='div.CourseLearning_card__WxYAo ul li')
+        what_youll_learn = WebDriverWait(self, 30).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                 'div.CourseLearning_card__WxYAo ul li')))
         topics_list = []
         for topics in what_youll_learn:
             topics_list.append(topics.text)
@@ -145,8 +164,11 @@ class CourseInfo(webdriver.Chrome):
     def get_course_timings(self) -> list[str]:
         class_list = []
         try:
-            timings = self.find_elements(by=By.CSS_SELECTOR,
-                                         value='div div.CoursePrice_time__1I6dT')
+            # timings = self.find_elements(by=By.CSS_SELECTOR,
+            #                              value='div div.CoursePrice_time__1I6dT')
+            timings = WebDriverWait(self, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                     'div div.CoursePrice_time__1I6dT')))
             if timings:
                 if len(timings) == 2:
                     class_list.append(f'class time: {timings[0].text}')
@@ -161,8 +183,11 @@ class CourseInfo(webdriver.Chrome):
         return class_list
 
     def get_requirements(self) -> list[str]:
-        requirements = self.find_elements(by=By.CSS_SELECTOR,
-                                          value="div.CourseRequirement_card__3g7zR ul li")
+        # requirements = self.find_elements(by=By.CSS_SELECTOR,
+        #                                   value="div.CourseRequirement_card__3g7zR ul li")
+        requirements = WebDriverWait(self, 30).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                 "div.CourseRequirement_card__3g7zR ul li")))
         requirements_list = []
         for requirement in requirements:
             requirements_list.append(requirement.text)
@@ -172,37 +197,55 @@ class CourseInfo(webdriver.Chrome):
     def get_click_view_more_button_curriculum(self) -> None:
         # find view more button and click in course curriculum
         try:
-            view_more_button = self.find_element(by=By.CSS_SELECTOR,
-                                                 value='span.CurriculumAndProjects_view-more-btn__3ggZL')
+            # view_more_button = self.find_element(by=By.CSS_SELECTOR,
+            #                                      value='span.CurriculumAndProjects_view-more-btn__3ggZL')
+            view_more_button = WebDriverWait(self, 30).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR,
+                                            'span.CurriculumAndProjects_view-more-btn__3ggZL')))
             view_more_button.click()
         except Exception as e:
             print(e)
             print('[INFO] no click view button found on course curriculum')
 
-    def click_plus_button_curriculum(self) -> None:
-        pass
-
     def get_curriculum_data(self) -> list[str, list]:
-        course_curriculum = self.find_element(by=By.CSS_SELECTOR,
-                                              value='div.CurriculumAndProjects_course-curriculum__Rlhvu')
+        retries = 3
+        while retries != 0:
+            course_curriculum = WebDriverWait(self, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR,
+                                                'div.CurriculumAndProjects_course-curriculum__Rlhvu')))
 
-        if course_curriculum.find_elements(By.CSS_SELECTOR, 'h4')[0].text != 'Course Curriculum':
-            print('[ERROR] course curriculum not found')
-            return []
-        time.sleep(1)
-        course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
-        time.sleep(3)
+            if course_curriculum.find_elements(By.CSS_SELECTOR, 'h4')[0].text != 'Course Curriculum':
+                print('[ERROR] course curriculum not found')
+                return []
+            time.sleep(3)
+            # course_curriculum_chapters = course_curriculum.find_element(by=By.CSS_SELECTOR, value='div div')
+            course_curriculum_chapters = WebDriverWait(course_curriculum, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'div div')))
+            time.sleep(3)
 
-        headings = WebDriverWait(course_curriculum_chapters, 10).until(
-            EC.presence_of_all_elements_located((By.XPATH, './/div/div/span')))
-        time.sleep(5)
+            try:
+                ignored_exceptions = (
+                    common.exceptions.NoSuchElementException, common.exceptions.StaleElementReferenceException)
+                headings = WebDriverWait(course_curriculum_chapters, 30, ignored_exceptions).until(
+                    EC.presence_of_all_elements_located((By.XPATH, './/div/div/span')))
+                time.sleep(3)
+                # removing 'preview' from headings
+                clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
+                print(f'clean curriculum headings {clean_heading}')
 
-        plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
+                plus_buttons = course_curriculum_chapters.find_elements(by=By.CSS_SELECTOR, value='.fas.fa-plus')
+                break
+
+            except common.exceptions.StaleElementReferenceException:
+                print(f'[WARNING] curriculum headings could not found, retrying...[{retries}/3]')
+                self.refresh()
+                retries -= 1
+
+        if retries == 0:
+            print(f'[ERROR] could not find curriculum headings')
+            sys.exit()
+
         course_curriculum_list = []
-
-        # removing 'preview' from headings
-        clean_heading = [heading.text for heading in headings if heading.text != 'Preview']
-
         for cnt, heading in enumerate(clean_heading, start=1):
             print(cnt)
 

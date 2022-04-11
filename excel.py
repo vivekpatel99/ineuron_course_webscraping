@@ -1,4 +1,3 @@
-import logging
 import sys
 
 import openpyxl
@@ -36,6 +35,8 @@ class Excel:
             worksheet.cell(row=max_row, column=10).value = '\n'.join(category_obj.course.mentor_names)
 
             op_workbook.save(filename=self.op_excel_file)
+            print(f'[INFO] {category_obj.category_name} -> {category_obj.course.course_name} '
+                  f'is already written in {self.op_excel_file}')
         finally:
             op_workbook.save(filename=self.op_excel_file)
             op_workbook.close()
