@@ -1,7 +1,7 @@
-import sys
 import time
 
 import fake_useragent
+import requests
 import selenium_stealth  # avoid detection from website that selenium is used
 from selenium import common
 from selenium import webdriver
@@ -47,8 +47,21 @@ class CourseInfo(webdriver.Chrome):
                                  fix_hairline=True, )
         return self
 
-    def goto_page(self, url: str = constants.BASE_URL) -> None:
-        self.get(url)
+    @staticmethod
+    def check_page_exist(url: str):
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            return True
+        else:
+            print('[WARNING] link does not exist')
+            return False
+
+    def goto_page(self, url: str = constants.BASE_URL) -> bool:
+        if self.check_page_exist(url=url):
+            self.get(url)
+            return True
+        return False
 
     # def get_list_categories(self):
     #     category_elem = self.find_element(by=By.ID, value='category')
@@ -138,27 +151,35 @@ class CourseInfo(webdriver.Chrome):
         return ''
 
     def get_course_features(self) -> list[str]:
-        # course_features = self.find_elements(by=By.CSS_SELECTOR,
-        # value='div.CoursePrice_course-features__2qcJp ul li')
-        course_features = WebDriverWait(self, 30).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
-                                                 'div.CoursePrice_course-features__2qcJp ul li')))
         features_list = []
-        for feature in course_features:
-            features_list.append(feature.text)
-        print(features_list)
+        try:
+            course_features = WebDriverWait(self, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                     'div.CoursePrice_course-features__2qcJp ul li')))
+
+            for feature in course_features:
+                features_list.append(feature.text)
+            print(features_list)
+            return features_list
+        except common.exceptions.StaleElementReferenceException:
+            print('[WARNING] No course features description found')
+
         return features_list
 
     def get_what_youll_learn(self) -> list[str]:
-        # what_youll_learn = self.find_elements(by=By.CSS_SELECTOR,
-        #                                       value='div.CourseLearning_card__WxYAo ul li')
-        what_youll_learn = WebDriverWait(self, 30).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
-                                                 'div.CourseLearning_card__WxYAo ul li')))
         topics_list = []
-        for topics in what_youll_learn:
-            topics_list.append(topics.text)
-        print(topics_list)
+        try:
+            what_youll_learn = WebDriverWait(self, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                     'div.CourseLearning_card__WxYAo ul li')))
+
+            for topics in what_youll_learn:
+                topics_list.append(topics.text)
+            print(topics_list)
+            return topics_list
+        except common.exceptions.StaleElementReferenceException:
+            print("[WARNING] No What you'll learn description found")
+
         return topics_list
 
     def get_course_timings(self) -> list[str]:
@@ -177,21 +198,26 @@ class CourseInfo(webdriver.Chrome):
                     class_list.append(f'class time: {timings[0].text}')
             print(class_list)
             return class_list
+        except common.exceptions.StaleElementReferenceException:
+            print("[WARNING] No class timing found found")
         except Exception as e:
             print(e)
 
         return class_list
 
     def get_requirements(self) -> list[str]:
-        # requirements = self.find_elements(by=By.CSS_SELECTOR,
-        #                                   value="div.CourseRequirement_card__3g7zR ul li")
-        requirements = WebDriverWait(self, 30).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR,
-                                                 "div.CourseRequirement_card__3g7zR ul li")))
         requirements_list = []
-        for requirement in requirements:
-            requirements_list.append(requirement.text)
-        print(requirements_list)
+        try:
+            requirements = WebDriverWait(self, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR,
+                                                     "div.CourseRequirement_card__3g7zR ul li")))
+
+            for requirement in requirements:
+                requirements_list.append(requirement.text)
+            print(requirements_list)
+            return requirements_list
+        except common.exceptions.StaleElementReferenceException:
+            print("[WARNING] No class timing found found")
         return requirements_list
 
     def get_click_view_more_button_curriculum(self) -> None:
@@ -243,7 +269,8 @@ class CourseInfo(webdriver.Chrome):
 
         if retries == 0:
             print(f'[ERROR] could not find curriculum headings')
-            sys.exit()
+            print("[WARNING] No course curriculum found found")
+            return []
 
         course_curriculum_list = []
         for cnt, heading in enumerate(clean_heading, start=1):
@@ -276,12 +303,16 @@ class CourseInfo(webdriver.Chrome):
         return course_curriculum_list
 
     def get_mentor_name(self) -> list[str]:
-        mentor_names = self.find_elements(by=By.CSS_SELECTOR,
-                                          value="div.InstructorDetails_mentor__2hmG8.InstructorDetails_card__14MoH.InstructorDetails_flex__2ePsQ.card.flex div h5")
         mentor_names_list = []
-        for mentor_name in mentor_names:
-            mentor_names_list.append(mentor_name.text)
-        print(mentor_names_list)
+        try:
+            mentor_names = self.find_elements(by=By.CSS_SELECTOR,
+                                              value="div.InstructorDetails_mentor__2hmG8.InstructorDetails_card__14MoH.InstructorDetails_flex__2ePsQ.card.flex div h5")
+            for mentor_name in mentor_names:
+                mentor_names_list.append(mentor_name.text)
+            print(mentor_names_list)
+            return mentor_names_list
+        except common.exceptions.StaleElementReferenceException:
+            print("[WARNING] No mentors found found")
         return mentor_names_list
 
     def get_all_info_from_page(self) -> Course:
